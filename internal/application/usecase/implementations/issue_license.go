@@ -9,11 +9,11 @@ import (
 type IssueLicenseUseCase struct {
 }
 
-func NewIssueLicenseUseCase() contrats.IssueLicenseUseCase {
+func NewIssueLicenseUseCase() contrats.LicenseIssuer {
 	return &IssueLicenseUseCase{}
 }
 
 // Execute implements contrats.IssueLicenseUseCase.
-func (i *IssueLicenseUseCase) Execute(ctx context.Context, fermenterDTO dto.CreateLicenseDTO) (dto.LicenseDTO, error) {
+func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, fermenterDTO dto.CreateLicenseDTO) (dto.LicenseDTO, error) {
 	panic("unimplemented")
 }
