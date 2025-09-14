@@ -13,6 +13,6 @@ func NewLicenseVerifierUseCase() contrats.LicenseVerifier {
 }
 
 // Execute implements contrats.LicenseVerifier.
-func (l *LicenseVerifierUseCase) Execute(ctx context.Context, folio string) (bool, error) {
+func (usecase *LicenseVerifierUseCase) Execute(ctx context.Context, folio string) (bool, error) {
 	panic("unimplemented")
 }

@@ -14,6 +14,6 @@ func NewLicenseRetrieverUseCase() contrats.LicenseRetriever {
 }
 
 // Execute implements contrats.LicenseRetriever.
-func (l *LicenseRetrieverUseCase) Execute(ctx context.Context, folio string) (dto.LicenseDTO, error) {
+func (usecase *LicenseRetrieverUseCase) Execute(ctx context.Context, folio string) (dto.LicenseDTO, error) {
 	panic("unimplemented")
 }

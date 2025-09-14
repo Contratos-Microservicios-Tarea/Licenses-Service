@@ -16,6 +16,6 @@ func NewLicensesByPatientRetrieverUseCase() contrats.LicensesByPatientRetriever 
 }
 
 // Execute implements contrats.LicensesByPatientRetriever.
-func (l *LicensesByPatientRetrieverUseCase) Execute(ctx context.Context, patientID string) ([]dto.LicenseDTO, error) {
+func (usecase *LicensesByPatientRetrieverUseCase) Execute(ctx context.Context, patientID string) ([]dto.LicenseDTO, error) {
 	panic("unimplemented")
 }
