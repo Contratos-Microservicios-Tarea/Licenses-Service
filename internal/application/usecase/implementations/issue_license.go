@@ -13,7 +13,8 @@ func NewIssueLicenseUseCase() contrats.LicenseIssuer {
 	return &IssueLicenseUseCase{}
 }
 
-// Execute implements contrats.IssueLicenseUseCase.
-func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, fermenterDTO dto.CreateLicenseDTO) (dto.LicenseDTO, error) {
-	panic("unimplemented")
+// Execute implements contrats.LicenseIssuer.
+func (i *IssueLicenseUseCase) Execute(ctx context.Context, fermenterDTO dto.CreateLicenseDTO) (*dto.LicenseDTO, error) {
+
+	return nil, nil
 }
