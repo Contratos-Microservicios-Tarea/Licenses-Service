@@ -7,7 +7,7 @@ import (
 
 // Para POST /licenses
 type LicenseIssuer interface {
-	Execute(ctx context.Context, fermenterDTO dto.CreateLicenseDTO) (*dto.LicenseDTO, error)
+	Execute(ctx context.Context, createLicenseDTO dto.CreateLicenseDTO) (*dto.LicenseDTO, error)
 }
 
 // Para GET /licenses/{folio}
