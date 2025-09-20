@@ -108,3 +108,62 @@ docker-compose.override.yml
 # Local development
 local/
 dev/
+
+# ===== AGREGADO PARA PROYECTO =====
+
+# PACT files (archivos de contrato generados)
+/pacts/
+*.pact
+/pact/
+
+# Testing artifacts
+/test-results/
+/coverage-reports/
+/allure-results/
+
+# Mocks generados
+*_mock.go
+/mocks/
+
+# Documentation generada
+/docs/generated/
+
+# Migration files temporales
+/migrations/temp/
+
+# Database migrations backup
+*.sql.bak
+
+# Swagger/OpenAPI generados
+/api/docs/
+swagger.json
+swagger.yaml
+
+# Profiling files
+*.prof
+*.cpu
+*.mem
+*.trace
+
+# Dependency injection wire files
+wire_gen.go
+
+# Kubernetes configs locales
+k8s-local/
+*.k8s.local.yaml
+
+# Terraform files (si usas IaC)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Performance test results
+/load-tests/results/
+
+# Local scripts
+scripts/local/
+*.local.sh
+
+# Cache de herramientas de desarrollo
+.cache/
