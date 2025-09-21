@@ -97,3 +97,28 @@ docker-compose logs -f
 
 docker-compose down
 ```
+
+## 🌐 API Endpoints
+
+### Flujo completo de una licencia:
+
+```bash
+# 1. Crear una nueva licencia
+curl -X POST http://localhost:8081/licenses \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patientId": "12345678-9",
+    "doctorId": "DOC001", 
+    "diagnosis": "GRIPE_COMUN",
+    "days": 5
+  }'
+
+# 2. Consultar la licencia creada
+curl http://localhost:8081/licenses/LIC-20250921-001
+
+# 3. Verificar estado de la licencia
+curl http://localhost:8081/licenses/LIC-20250921-001/verify
+
+# 4. Obtener todas las licencias del paciente
+curl http://localhost:8081/licenses?patientId=12345678-9
+```
