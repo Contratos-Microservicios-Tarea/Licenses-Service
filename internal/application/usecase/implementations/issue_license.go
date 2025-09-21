@@ -24,10 +24,9 @@ func NewIssueLicenseUseCase(licenseRepository repositories.LicenseRepository) co
 }
 
 func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDTO dto.CreateLicenseDTO) (*dto.LicenseDTO, error) {
-	log := logger.NewLogger()
 
 	if err := usecase.validateRequiredFields(createLicenseDTO); err != nil {
-		log.Error("IssueLicenseUseCase", "Execute", err, "validation failed")
+		usecase.logger.Error("IssueLicenseUseCase", "Execute", err, "validation failed")
 		return nil, err
 	}
 
@@ -39,7 +38,7 @@ func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDT
 			"Execute",
 			"invalid PatientID format",
 		)
-		log.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid PatientID")
+		usecase.logger.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid PatientID")
 		return nil, AppErr
 	}
 
@@ -51,7 +50,7 @@ func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDT
 			"Execute",
 			"invalid DoctorID format",
 		)
-		log.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid DoctorID")
+		usecase.logger.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid DoctorID")
 		return nil, AppErr
 	}
 
@@ -63,7 +62,7 @@ func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDT
 			"Execute",
 			"invalid Diagnosis format",
 		)
-		log.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid Diagnosis")
+		usecase.logger.Error("IssueLicenseUseCase", "Execute", AppErr, "invalid Diagnosis")
 		return nil, AppErr
 	}
 
@@ -86,7 +85,7 @@ func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDT
 			"Execute",
 			"license is not valid",
 		)
-		log.Error("IssueLicenseUseCase", "Execute", AppErr, err.Error())
+		usecase.logger.Error("IssueLicenseUseCase", "Execute", AppErr, err.Error())
 		return nil, AppErr
 	}
 
@@ -105,7 +104,7 @@ func (usecase *IssueLicenseUseCase) Execute(ctx context.Context, createLicenseDT
 		Status:    license.Status,
 	}
 
-	log.Info("IssueLicenseUseCase", "Execute", "license created successfully")
+	usecase.logger.Info("IssueLicenseUseCase", "Execute", "license created successfully")
 	return responseDTO, nil
 }
 
