@@ -130,6 +130,8 @@ dev/
 
 # Migration files temporales
 /migrations/temp/
+cmd/api/tmp/build-errors.log
+cmd/api/tmp/main.exe
 
 # Database migrations backup
 *.sql.bak
