@@ -9,17 +9,24 @@ import (
 	handler "license-service/pkg/handler"
 	errors "license-service/pkg/log/error"
 	logs "license-service/pkg/log/logger"
+
+	"github.com/gorilla/mux"
 )
 
 type LicenseController struct {
-	issueLicenseUseCase contrats.LicenseIssuer
-	logger              logs.Logger
+	issueLicenseUseCase    contrats.LicenseIssuer
+	retrieveLicenseUseCase contrats.LicenseRetriever
+	logger                 logs.Logger
 }
 
-func NewLicenseController(issueLicenseUseCase contrats.LicenseIssuer) *LicenseController {
+func NewLicenseController(
+	issueLicenseUseCase contrats.LicenseIssuer,
+	retrieveLicenseUseCase contrats.LicenseRetriever,
+) *LicenseController {
 	return &LicenseController{
-		issueLicenseUseCase: issueLicenseUseCase,
-		logger:              *logs.NewLogger(),
+		issueLicenseUseCase:    issueLicenseUseCase,
+		retrieveLicenseUseCase: retrieveLicenseUseCase,
+		logger:                 *logs.NewLogger(),
 	}
 }
 
@@ -66,6 +73,50 @@ func (lc *LicenseController) CreateLicense(w http.ResponseWriter, r *http.Reques
 			"failed to encode response",
 		)
 		lc.logger.Error("LicenseController", "CreateLicense", AppErr, "response encoding failed")
+		handler.WriteErrorResponse(w, http.StatusInternalServerError, "INTERNAL_ERROR")
+	}
+}
+
+func (lc *LicenseController) GetLicense(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		lc.logger.Error("LicenseController", "GetLicense", nil, "method not allowed: "+r.Method)
+		handler.WriteErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED")
+		return
+	}
+
+	// Extraer folio de la URL
+	vars := mux.Vars(r)
+	folio := vars["folio"]
+
+	if folio == "" {
+		lc.logger.Error("LicenseController", "GetLicense", nil, "folio parameter is missing")
+		handler.WriteErrorResponse(w, http.StatusBadRequest, "NOT_FOUND")
+		return
+	}
+
+	lc.logger.Info("LicenseController", "GetLicense", "retrieving license with folio: "+folio)
+
+	ctx := r.Context()
+	license, err := lc.retrieveLicenseUseCase.Execute(ctx, folio)
+	if err != nil {
+		lc.logger.Error("LicenseController", "GetLicense", err, "use case execution failed")
+		handler.HandleUseCaseError(w, err)
+		return
+	}
+
+	lc.logger.Info("LicenseController", "GetLicense", "license retrieved successfully")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(license); err != nil {
+		AppErr := errors.NewAppError(
+			errors.ErrInternalError,
+			"LicenseController",
+			"GetLicense",
+			"failed to encode response",
+		)
+		lc.logger.Error("LicenseController", "GetLicense", AppErr, "response encoding failed")
 		handler.WriteErrorResponse(w, http.StatusInternalServerError, "INTERNAL_ERROR")
 	}
 }
