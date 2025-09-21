@@ -113,28 +113,3 @@ func (r *licenseRepositoryImpl) FindByPatientID(ctx context.Context, patientID s
 	r.logger.Info("LicenseRepository", "FindByPatientID", fmt.Sprintf("found %d licenses for patient: %s", len(licenses), patientID))
 	return licenses, nil
 }
-
-func (r *licenseRepositoryImpl) ExistsByFolioAndStatus(ctx context.Context, folio string, status string) (bool, error) {
-	r.logger.Info("LicenseRepository", "ExistsByFolioAndStatus", fmt.Sprintf("checking existence for folio: %s, status: %s", folio, status))
-
-	var count int64
-	result := r.db.WithContext(ctx).
-		Model(&entities.LicenseEntity{}).
-		Where("folio = ? AND status = ?", folio, status).
-		Count(&count)
-
-	if result.Error != nil {
-		appErr := errorInfo.NewAppError(
-			errorInfo.ErrInternalError,
-			"LicenseRepository",
-			"ExistsByFolioAndStatus",
-			fmt.Sprintf("failed to check existence: %v", result.Error),
-		)
-		r.logger.Error("LicenseRepository", "ExistsByFolioAndStatus", appErr, "database query failed")
-		return false, appErr
-	}
-
-	exists := count > 0
-	r.logger.Info("LicenseRepository", "ExistsByFolioAndStatus", fmt.Sprintf("license exists: %t", exists))
-	return exists, nil
-}
