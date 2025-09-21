@@ -48,6 +48,8 @@ func HandleUseCaseError(w http.ResponseWriter, err error) {
 			WriteDetailedErrorResponse(w, http.StatusBadRequest, "MISSING_REQUIRED_FIELD", appErr.Message)
 		case errors.ErrInvalidData:
 			WriteDetailedErrorResponse(w, http.StatusBadRequest, "INVALID_DATA", appErr.Message)
+		case errors.ErrNotFound:
+			WriteErrorResponse(w, http.StatusNotFound, "NOT_FOUND")
 		default:
 			WriteDetailedErrorResponse(w, http.StatusInternalServerError, "INTERNAL_ERROR", "An unexpected error occurred")
 		}
