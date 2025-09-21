@@ -2,8 +2,6 @@ package database
 
 import (
 	"fmt"
-	"strings"
-	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -16,22 +14,41 @@ import (
 
 func NewConnection() (*gorm.DB, error) {
 	config := envConfig.Load()
+	log := appLogger.NewLogger()
 
 	var dsn string
 
+	// Priorizar URL completa si está disponible
 	if config.Database.Url != "" {
-		dsn = strings.Replace(config.Database.Url, "db:5432", "localhost:5432", 1)
+		dsn = config.Database.Url
+		log.Info("Database", "NewConnection", "Using POSTGRES_URL from environment")
 	} else {
-		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Santiago",
-			"localhost",
+		// Construir DSN desde componentes individuales
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
+			config.Database.Host,
 			config.Database.Username,
 			config.Database.Password,
 			config.Database.Name,
-			"5432")
+			config.Database.Port,
+			config.Database.SSLMode,
+			config.Database.TimeZone)
+		log.Info("Database", "NewConnection", "Building DSN from individual components")
 	}
 
+	// Configurar nivel de log de GORM
+	gormLogLevel := getGormLogLevel(config.Database.GormLogLevel)
+
+	dbLogger := logger.New(
+		appLogger.NewLogger(),
+		logger.Config{
+			SlowThreshold: config.Database.SlowThreshold,
+			LogLevel:      gormLogLevel,
+			Colorful:      true,
+		},
+	)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: dbLogger,
 	})
 
 	if err != nil {
@@ -40,25 +57,22 @@ func NewConnection() (*gorm.DB, error) {
 			"Database",
 			"NewConnection",
 			"Failed to connect to database")
-		appLogger.Error("Database", "NewConnection", dbError, "dsn", dsn, "error", err.Error())
+		log.Error("Database", "NewConnection", dbError, "error: "+err.Error())
 		return nil, dbError
 	}
 
-	if err := configureConnectionPool(db); err != nil {
-		poolError := appError.NewAppError(
-			appError.ErrDBConnection,
-			"Database",
-			"configureConnectionPool",
-			"Failed to configure connection pool")
-		appLogger.Error("Database", "configureConnectionPool", poolError, "error", err.Error())
-		return nil, poolError
+	// Configurar pool de conexiones
+	if err := configureConnectionPool(db, config); err != nil {
+		return nil, err
 	}
 
-	appLogger.NewLogger().Info("Successfully | Database connection established")
+	log.Info("Database", "NewConnection", "Database connection established successfully")
 	return db, nil
 }
 
-func configureConnectionPool(db *gorm.DB) error {
+func configureConnectionPool(db *gorm.DB, config *envConfig.Config) error {
+	log := appLogger.NewLogger()
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		poolError := appError.NewAppError(
@@ -66,14 +80,31 @@ func configureConnectionPool(db *gorm.DB) error {
 			"Database",
 			"configureConnectionPool",
 			"Failed to get underlying sql.DB")
-		appLogger.Error("Database", "configureConnectionPool", poolError, "error", err.Error())
+		log.Error("Database", "configureConnectionPool", poolError, "error: "+err.Error())
 		return poolError
 	}
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxIdleConns(config.Database.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(config.Database.MaxOpenConns)
+	sqlDB.SetConnMaxLifetime(config.Database.ConnMaxLifetime)
 
-	appLogger.NewLogger().Info("Successfully | Connection pool configured")
+	log.Info("Database", "configureConnectionPool", fmt.Sprintf("Connection pool configured - MaxIdle: %d, MaxOpen: %d, MaxLifetime: %v",
+		config.Database.MaxIdleConns, config.Database.MaxOpenConns, config.Database.ConnMaxLifetime))
+
 	return nil
+}
+
+func getGormLogLevel(level string) logger.LogLevel {
+	switch level {
+	case "silent":
+		return logger.Silent
+	case "error":
+		return logger.Error
+	case "warn":
+		return logger.Warn
+	case "info":
+		return logger.Info
+	default:
+		return logger.Info
+	}
 }
