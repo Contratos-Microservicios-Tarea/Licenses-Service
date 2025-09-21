@@ -52,16 +52,20 @@ func (license *License) SetDefaultStatus(status string) {
 	license.Status = StatusIssued
 }
 
-func (l *License) IsValid() error {
-	if l.Days <= 0 {
+func (license *License) IsValid() error {
+	if license.Days <= 0 {
 		AppError := err.NewAppError(err.ErrInternalError, "license model", "validateDays", "DAy invalide")
 		logger.Error("IssueLicenseUseCase", "Execute", AppError)
 		return AppError
 	}
-	if l.Status != StatusIssued {
+	if license.Status != StatusIssued {
 		AppError := err.NewAppError(err.ErrInternalError, "license model", "validateDays", "INVALIDED STATUS")
 		logger.Error("IssueLicenseUseCase", "Execute", AppError)
 		return AppError
 	}
 	return nil
+}
+
+func (license *License) IsIssued() bool {
+	return license.Status == "issued"
 }
