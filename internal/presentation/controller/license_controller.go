@@ -14,23 +14,25 @@ import (
 )
 
 type LicenseController struct {
-	issueLicenseUseCase    contrats.LicenseIssuer
-	retrieveLicenseUseCase contrats.LicenseRetriever
-	licenseVerifierUseCase contrats.LicenseVerifier
-	logger                 logs.Logger
+	issueLicenseUseCase               contrats.LicenseIssuer
+	retrieveLicenseUseCase            contrats.LicenseRetriever
+	licenseVerifierUseCase            contrats.LicenseVerifier
+	licensesByPatientRetrieverUseCase contrats.LicensesByPatientRetriever
+	logger                            logs.Logger
 }
 
 func NewLicenseController(
 	issueLicenseUseCase contrats.LicenseIssuer,
 	retrieveLicenseUseCase contrats.LicenseRetriever,
 	licenseVerifierUseCase contrats.LicenseVerifier,
-
+	licensesByPatientRetrieverUseCase contrats.LicensesByPatientRetriever,
 ) *LicenseController {
 	return &LicenseController{
-		issueLicenseUseCase:    issueLicenseUseCase,
-		retrieveLicenseUseCase: retrieveLicenseUseCase,
-		licenseVerifierUseCase: licenseVerifierUseCase,
-		logger:                 *logs.NewLogger(),
+		issueLicenseUseCase:               issueLicenseUseCase,
+		retrieveLicenseUseCase:            retrieveLicenseUseCase,
+		licenseVerifierUseCase:            licenseVerifierUseCase,
+		licensesByPatientRetrieverUseCase: licensesByPatientRetrieverUseCase,
+		logger:                            *logs.NewLogger(),
 	}
 }
 
@@ -155,5 +157,46 @@ func (controller *LicenseController) VerifyLicense(w http.ResponseWriter, r *htt
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]bool{"valid": false})
+	}
+}
+
+func (lc *LicenseController) GetLicensesByPatient(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		lc.logger.Error("LicenseController", "GetLicensesByPatient", nil, "method not allowed: "+r.Method)
+		handler.WriteErrorResponse(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED")
+		return
+	}
+
+	patientID := r.URL.Query().Get("patientId")
+	if patientID == "" {
+		lc.logger.Error("LicenseController", "GetLicensesByPatient", nil, "patientId parameter is missing")
+		handler.WriteErrorResponse(w, http.StatusBadRequest, "MISSING_REQUIRED_FIELD")
+		return
+	}
+
+	lc.logger.Info("LicenseController", "GetLicensesByPatient", "retrieving licenses for patient: "+patientID)
+
+	ctx := r.Context()
+	licenses, err := lc.licensesByPatientRetrieverUseCase.Execute(ctx, patientID)
+	if err != nil {
+		lc.logger.Error("LicenseController", "GetLicensesByPatient", err, "use case execution failed")
+		handler.HandleUseCaseError(w, err)
+		return
+	}
+
+	lc.logger.Info("LicenseController", "GetLicensesByPatient", "licenses retrieved successfully", "count", len(licenses))
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(licenses); err != nil {
+		AppErr := errors.NewAppError(
+			errors.ErrInternalError,
+			"LicenseController",
+			"GetLicensesByPatient",
+			"failed to encode response",
+		)
+		lc.logger.Error("LicenseController", "GetLicensesByPatient", AppErr, "response encoding failed")
+		handler.WriteErrorResponse(w, http.StatusInternalServerError, "INTERNAL_ERROR")
 	}
 }
