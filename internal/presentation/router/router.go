@@ -1,21 +1,27 @@
 package router
 
 import (
-	"github.com/gorilla/mux"
-
-	contrats "license-service/internal/application/usecase/contrats"
+	"license-service/internal/application/usecase/contrats"
 	"license-service/internal/presentation/controller"
 	logs "license-service/pkg/log/logger"
+
+	"github.com/gorilla/mux"
 )
 
 func SetupRoutes(
 	licenseIssuer contrats.LicenseIssuer,
-	logger *logs.Logger,
+	licenseRetriever contrats.LicenseRetriever,
+	logger logs.Logger,
 ) *mux.Router {
-	licenseController := controller.NewLicenseController(licenseIssuer)
+	r := mux.NewRouter()
 
-	router := mux.NewRouter()
-	router.HandleFunc("/licenses", licenseController.CreateLicense).Methods("POST")
+	licenseController := controller.NewLicenseController(
+		licenseIssuer,
+		licenseRetriever,
+	)
 
-	return router
+	r.HandleFunc("/licenses", licenseController.CreateLicense).Methods("POST")
+	r.HandleFunc("/licenses/{folio}", licenseController.GetLicense).Methods("GET")
+
+	return r
 }
