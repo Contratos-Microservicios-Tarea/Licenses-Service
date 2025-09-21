@@ -16,16 +16,20 @@ import (
 type LicenseController struct {
 	issueLicenseUseCase    contrats.LicenseIssuer
 	retrieveLicenseUseCase contrats.LicenseRetriever
+	licenseVerifierUseCase contrats.LicenseVerifier
 	logger                 logs.Logger
 }
 
 func NewLicenseController(
 	issueLicenseUseCase contrats.LicenseIssuer,
 	retrieveLicenseUseCase contrats.LicenseRetriever,
+	licenseVerifierUseCase contrats.LicenseVerifier,
+
 ) *LicenseController {
 	return &LicenseController{
 		issueLicenseUseCase:    issueLicenseUseCase,
 		retrieveLicenseUseCase: retrieveLicenseUseCase,
+		licenseVerifierUseCase: licenseVerifierUseCase,
 		logger:                 *logs.NewLogger(),
 	}
 }
@@ -84,7 +88,6 @@ func (lc *LicenseController) GetLicense(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Extraer folio de la URL
 	vars := mux.Vars(r)
 	folio := vars["folio"]
 
@@ -118,5 +121,39 @@ func (lc *LicenseController) GetLicense(w http.ResponseWriter, r *http.Request) 
 		)
 		lc.logger.Error("LicenseController", "GetLicense", AppErr, "response encoding failed")
 		handler.WriteErrorResponse(w, http.StatusInternalServerError, "INTERNAL_ERROR")
+	}
+}
+
+func (controller *LicenseController) VerifyLicense(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	folio := vars["folio"]
+
+	if folio == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "Folio is required",
+		})
+		return
+	}
+
+	isValid, err := controller.licenseVerifierUseCase.Execute(r.Context(), folio)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "Internal server error",
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if isValid {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]bool{"valid": true})
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]bool{"valid": false})
 	}
 }

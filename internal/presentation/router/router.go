@@ -11,17 +11,20 @@ import (
 func SetupRoutes(
 	licenseIssuer contrats.LicenseIssuer,
 	licenseRetriever contrats.LicenseRetriever,
+	licenseVerifier contrats.LicenseVerifier,
 	logger logs.Logger,
 ) *mux.Router {
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
 	licenseController := controller.NewLicenseController(
 		licenseIssuer,
 		licenseRetriever,
+		licenseVerifier,
 	)
 
-	r.HandleFunc("/licenses", licenseController.CreateLicense).Methods("POST")
-	r.HandleFunc("/licenses/{folio}", licenseController.GetLicense).Methods("GET")
+	router.HandleFunc("/licenses", licenseController.CreateLicense).Methods("POST")
+	router.HandleFunc("/licenses/{folio}", licenseController.GetLicense).Methods("GET")
+	router.HandleFunc("/licenses/{folio}/verify", licenseController.VerifyLicense).Methods("GET")
 
-	return r
+	return router
 }
