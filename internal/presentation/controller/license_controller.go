@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"license-service/internal/application/dto"
 	"license-service/internal/application/usecase/contrats"
@@ -56,16 +57,33 @@ func (lc *LicenseController) CreateLicense(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	lc.logger.Info("LicenseController", "CreateLicense", "request decoded successfully, executing use case")
-
 	ctx := r.Context()
 	license, err := lc.issueLicenseUseCase.Execute(ctx, req)
 	if err != nil {
 		lc.logger.Error("LicenseController", "CreateLicense", err, "use case execution failed")
-		handler.HandleUseCaseError(w, err)
-		return
-	}
 
+		lc.logger.Info("LicenseController", "CreateLicense", "Error message: "+err.Error())
+
+		switch {
+		case strings.Contains(err.Error(), "Days must be greater than 0"):
+			lc.logger.Info("LicenseController", "CreateLicense", "Matched invalid days case")
+			handler.WriteErrorResponse(w, http.StatusBadRequest, "INVALID_DAYS")
+			return
+		case strings.Contains(err.Error(), "invalid date"):
+			handler.WriteErrorResponse(w, http.StatusBadRequest, "INVALID_DATE")
+			return
+		case strings.Contains(err.Error(), "PatientID is required"):
+			handler.WriteErrorResponse(w, http.StatusBadRequest, "INVALID_PATIENT")
+			return
+		case strings.Contains(err.Error(), "DoctorID is required"):
+			handler.WriteErrorResponse(w, http.StatusBadRequest, "INVALID_DOCTOR")
+			return
+		default:
+			lc.logger.Info("LicenseController", "CreateLicense", "No specific error match, using default handler")
+			handler.HandleUseCaseError(w, err)
+			return
+		}
+	}
 	lc.logger.Info("LicenseController", "CreateLicense", "license created successfully")
 
 	w.Header().Set("Content-Type", "application/json")
